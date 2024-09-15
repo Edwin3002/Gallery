@@ -1,7 +1,6 @@
-import 'dart:ffi';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_localization/flutter_localization.dart';
+import 'package:gallery/language/language.dart';
 import 'package:photo_manager/photo_manager.dart';
 import '/widgets/asset_thumbnail.dart';
 
@@ -22,7 +21,11 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Future<void> _fetchAssets() async {
     assets = await PhotoManager.getAssetListRange(
       start: 0,
-      end: 100000,
+      end: 50,
+    );
+    assets = await PhotoManager.getAssetListRange(
+      start: 0,
+      end: 50,
     );
 
     setState(() {});
@@ -30,23 +33,26 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   @override
   void initState() {
-    _fetchAssets();
+    // _fetchAssets();
     super.initState();
   }
+
+  final FlutterLocalization localization = FlutterLocalization.instance;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("gallery"),
+        title: Text(AppLocale.title.getString(context)),
         actions: [
           IconButton(
               onPressed: () {
                 showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
+                    isDismissible: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => _ProductDetail(
+                    builder: (context) => _MediaView(
                         setCounterGrid: (value) {
                           counterGrid = value;
                           setState(() {});
@@ -54,12 +60,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         counterGrid: counterGrid));
               },
               icon: const Icon(Icons.more_horiz_outlined)),
-          // IconButton(
-          //     onPressed: () {
-          //       Navigator.pop(context);
-          //       // close.of(context).showBodyScrim(false, 0.0);
-          //     },
-          //     icon: const Icon(Icons.view_week_outlined))
         ],
       ),
       body: GestureDetector(
@@ -163,29 +163,31 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 }
 
-class _ProductDetail extends StatefulWidget {
+class _MediaView extends StatefulWidget {
   void Function(int) setCounterGrid;
   int counterGrid;
-  _ProductDetail({required this.setCounterGrid, required this.counterGrid});
+  _MediaView({required this.setCounterGrid, required this.counterGrid});
 
   @override
-  State<_ProductDetail> createState() => _ProductDetailState();
+  State<_MediaView> createState() => _ProductDetailState();
 }
 
-class _ProductDetailState extends State<_ProductDetail> {
+class _ProductDetailState extends State<_MediaView> {
   double sliderValue = 4;
+  final FlutterLocalization _localization = FlutterLocalization.instance;
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.6,
-      maxChildSize: 0.9,
+      maxChildSize: 0.8,
       builder: (context, scrollController) {
         return Container(
-          decoration:  BoxDecoration(
+          decoration: BoxDecoration(
               color: Colors.grey[900],
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20))),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Stack(
@@ -207,9 +209,9 @@ class _ProductDetailState extends State<_ProductDetail> {
                   controller: scrollController,
                   children: [
                     ListTile(
-                      title: const Text(
-                        "Settings",
-                        style: TextStyle(
+                      title: Text(
+                        AppLocale.settings.getString(context),
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
@@ -226,7 +228,7 @@ class _ProductDetailState extends State<_ProductDetail> {
                               width: 10,
                             ),
                             Text(
-                              "Number Columns ${widget.counterGrid}",
+                              "${AppLocale.columns.getString(context)} ${widget.counterGrid}",
                             ),
                           ],
                         ),
@@ -242,9 +244,51 @@ class _ProductDetailState extends State<_ProductDetail> {
                             setState(() {});
                           },
                         )),
-                    const SizedBox(
-                      height: 60,
-                    )
+                    ListTile(
+                      title: Row(
+                        children: [
+                          const Icon(Icons.translate),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Text(AppLocale.language.getString(context))
+                        ],
+                      ),
+                      subtitle: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(children: [
+                              Radio(
+                                value: "English",
+                                groupValue: _localization.getLanguageName(),
+                                onChanged: (value) {
+                                  _localization.translate('en');
+                                },
+                              ),
+                              const Text("English"),
+                            ]),
+                            Row(
+                              children: [
+                                Radio(
+                                  value: "Español",
+                                  groupValue: _localization.getLanguageName(),
+                                  onChanged: (value) {
+                                    _localization.translate('es');
+                                  },
+                                ),
+                                const Text("Español"),
+                                const SizedBox(
+                                  width: 15,
+                                )
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
