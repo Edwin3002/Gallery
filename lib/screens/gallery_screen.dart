@@ -1,8 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:gallery/language/language.dart';
+import 'package:gallery/widgets/folder_card.dart';
 import 'package:photo_manager/photo_manager.dart';
-import '/widgets/asset_thumbnail.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({Key? key}) : super(key: key);
@@ -13,37 +14,103 @@ class GalleryScreen extends StatefulWidget {
 
 class _GalleryScreenState extends State<GalleryScreen> {
   List<AssetEntity> assets = [];
+  List<AssetPathEntity> paths = [];
   int counterGrid = 4;
-  double initialScaleCurrent = 0;
-  double initialScaleCurrent2 = 0;
-  int initialScale = 0;
-  int initialScale2 = 0;
   Future<void> _fetchAssets() async {
-    assets = await PhotoManager.getAssetListRange(
-      start: 0,
-      end: 50,
-    );
-    assets = await PhotoManager.getAssetListRange(
-      start: 0,
-      end: 50,
-    );
-
+    paths = await PhotoManager.getAssetPathList();
+    for (var element in paths) {
+      final assetsPath = await element.getAssetListRange(start: 0, end: 1);
+      assets.add(assetsPath[0]);
+    }
     setState(() {});
   }
 
   @override
   void initState() {
-    // _fetchAssets();
+    _fetchAssets();
     super.initState();
   }
 
   final FlutterLocalization localization = FlutterLocalization.instance;
+  bool selectedFolders = false;
+  List<String> numberFolders = [];
+  int _selectedIndex = 0; // Keeps track of the selected index
+
+  Future<void> deleteAllAssetsInPath(AssetPathEntity path) async {
+    // Get all assets in the path
+    final assets = await path.getAssetListRange(start: 0, end: 500000);
+
+    // Delete each asset
+    for (var asset in assets) {
+      try {
+        // Get the file from the asset
+        final file = await asset.file;
+
+        // Check if the file is not null and exists
+        if (file != null && await file.exists()) {
+          await file.delete();
+          String? url = await asset.getMediaUrl();
+          File(url!).delete();
+        }
+      } catch (e) {
+        print('Failed to delete asset: $e');
+      }
+    }
+
+    // Optionally remove the empty path from the media store
+    // This step may require additional permissions or platform-specific code
+    print('All assets in the path have been deleted.');
+  }
+
+  void _onItemTapped(int index) async {
+    setState(() {
+      _selectedIndex = index; // Update the selected index
+    });
+    switch (index) {
+      case 0:
+        print('Home tapped');
+        // Navigate to home page or perform other actions
+        break;
+      case 1:
+        for (var path in numberFolders) {
+          final pathList = await PhotoManager.getAssetPathList(onlyAll: true);
+          if (pathList.isNotEmpty) {
+            // Delete all assets in the first available path
+            await deleteAllAssetsInPath(pathList.first);
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('All assets deleted successfully')));
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('No asset paths available')));
+          }
+        }
+        // Navigate to search page or perform other actions
+        break;
+      case 2:
+        print('Profile tapped');
+        // Navigate to profile page or perform other actions
+        break;
+    }
+  }
+
+  void setSelectedFolders(bool value, String idFolder) {
+    selectedFolders = value;
+    if (value) {
+      numberFolders.add(idFolder);
+    } else {
+      numberFolders.removeWhere((element) => element == idFolder);
+    }
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocale.title.getString(context)),
+        title: numberFolders.isEmpty
+            ? Text(AppLocale.title.getString(context))
+            : Text(
+                "${AppLocale.selected.getString(context)} ${numberFolders.length}"),
         actions: [
           IconButton(
               onPressed: () {
@@ -62,99 +129,40 @@ class _GalleryScreenState extends State<GalleryScreen> {
               icon: const Icon(Icons.more_horiz_outlined)),
         ],
       ),
+      bottomNavigationBar: numberFolders.isNotEmpty
+          ? BottomNavigationBar(
+              currentIndex: _selectedIndex, // Set the current index
+              onTap: _onItemTapped,
+              items: const [
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.drive_file_move_outlined), label: "Move"),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.delete_outlined),
+                  label: "Delete",
+                ),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.drive_file_rename_outline_outlined),
+                    label: "Rename"),
+              ],
+              backgroundColor: Colors.indigo.shade800,
+            )
+          : const SizedBox.shrink(),
       body: GestureDetector(
-        // onScaleUpdate: (details) {
-        //   if (initialScale == 0) {
-        //     initialScale = details.scale.toInt();
-        //     return;
-        //   }
-        //   initialScale2 = details.scale.toInt();
-        //   print(details.scale.toInt());
-        //   if (initialScale == initialScale2) return;
-
-        //   if (initialScale2 > 1.1) {
-        //     final sum = counterGrid + (initialScale2 - initialScale);
-        //     if (sum > 11 || sum < 1) return;
-        //     counterGrid = sum;
-        //   }
-        //   setState(() {});
-        //   initialScale = details.scale.toInt();
-        //   return;
-        // initialScaleCurrent = details.scale;
-        // if (initialScaleCurrent < (initialScale - 0.1)) {
-        //   // if (counterGrid > 9) return;
-        //   print("siuuuuuuu");
-        //   print(((details.scale - 1) * -10).toInt());
-        //   final si = ((details.scale - 1) * -10).toInt();
-        //   if (counterGrid == ((details.scale - 1) * -10).toInt()) return;
-        //   counterGrid = initialScaleCurrent2 >= initialScaleCurrent
-        //       ? counterGrid + ((details.scale - 1) * -10).toInt()
-        //       : -((details.scale - 1) * -10).toInt();
-        //   setState(() {});
-        //   // initialScaleCurrent2 = details.scale;
-        //   return;
-        // } else if (initialScaleCurrent > (initialScale + 0.1)) {
-        //   print(details.scale);
-        //   print("noooooooooooo");
-        //   // if (counterGrid == ((details.scale - 1) * 10).toInt()) return;
-        //   // counterGrid = ((details.scale - 1) * 10).toInt();
-        // }
-        // int grid = (((initialScaleCurrent + details.scale) - 1) * 10).toInt();
-        // double grid = (details.scale);
-        // print("----------------> $grid");
-        // // if (grid <= 1) return;
-        // // if (grid >= 2) return;
-        // if (details.scale >= initialScale) {
-        // print("siuuuuuuu");
-        //   // if (counterGrid <= 1) {
-        //   counterGrid = counterGrid + ((grid + 0.5).toInt());
-        // setState(() {});
-        //   // }
-        //   return;
-        // } else {
-        // print("noooooooooooo");
-        //   // if (counterGrid <= 1) return;
-        //   // print(counterGrid - ((1 - details.scale) * 10).toInt());
-        //   counterGrid = counterGrid - ((details.scale - 1) * 10).toInt();
-        //   setState(() {});
-        // }
-        // }
-        // else if (initialScale < details.scale) {
-        //   if (counterGrid == 2) return;
-        //   counterGrid++;
-        // }
-        // Calcula el ángulo entre los dedos
-        // Offset currentFocalPoint = details.focalPoint;
-        // double dx = currentFocalPoint.dx - _startPosition1.dx;
-        // double dy = currentFocalPoint.dy - _startPosition1.dy;
-        // double angle = atan2(dy, dx) * (180 / pi); // Ángulo en grados
-        // // print(currentFocalPoint);
-        // // print(details.scale);
-        // // Verificar si el gesto es diagonal
-        // if (details.scale != 1.0) {
-        //   // Ajuste para evitar movimientos no deseados
-        //   if (angle.abs() > 30 && angle.abs() < 60) {
-        //     // Ajusta los umbrales según sea necesario
-        //     print("Diagonal Gesture");
-        //   } else {
-        //     print("Not Diagonal Gesture");
-        //   }
-        // }
-        // },
-        // onScaleEnd: (details) {
-        //   initialScale == 0;
-        //   initialScaleCurrent == 0;
-        //   initialScaleCurrent2 == 0;
-        //   setState(() {});
-        // },
         child: GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: counterGrid,
           ),
+          padding: const EdgeInsets.all(5),
           itemCount: assets.length,
           itemBuilder: (_, index) {
-            return AssetThumbnail(
-              asset: assets[index],
+            return Padding(
+              padding: const EdgeInsets.all(2),
+              child: FolderCard(
+                isSelectedFolders: numberFolders.isNotEmpty,
+                setSelectedFolders: setSelectedFolders,
+                path: paths[index],
+                folder: paths[index],
+              ),
             );
           },
         ),
@@ -164,9 +172,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
 }
 
 class _MediaView extends StatefulWidget {
-  void Function(int) setCounterGrid;
-  int counterGrid;
-  _MediaView({required this.setCounterGrid, required this.counterGrid});
+  final void Function(int) setCounterGrid;
+  final int counterGrid;
+  const _MediaView({required this.setCounterGrid, required this.counterGrid});
 
   @override
   State<_MediaView> createState() => _ProductDetailState();
