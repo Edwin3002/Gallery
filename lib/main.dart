@@ -50,7 +50,10 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(
+      color: Colors.indigo,
+      theme: ThemeData(
+       brightness: Brightness.dark,
+        colorSchemeSeed: Colors.indigo,
         useMaterial3: true,
       ),
       supportedLocales: localization.supportedLocales,
@@ -74,40 +77,42 @@ class _HomeScreenState extends State<HomeScreen> {
     isAuth = ps.isAuth;
     setState(() {});
   }
-@override
+
+  @override
   void initState() {
-  permission();
+    permission();
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
     return isAuth
         ? const GalleryScreen()
         : Scaffold(
             body: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: <Color>[
-                    Color(0xff1f005c),
-                    Color(0xff5b0060),
-                    // Color(0xff870160),
-                    Color(0xffac255e),
-                    // Color(0xffca485c),
-                    // Color(0xffe16b5c),
-                    // Color(0xfff39060),
-                    // Color(0xffffb56b),
-                  ], // Gradient from https://learnui.design/tools/gradient-generator.html
-                  tileMode: TileMode.mirror,
-                ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  Color(0xff1f005c),
+                  Color(0xff5b0060),
+                  // Color(0xff870160),
+                  Color(0xffac255e),
+                  // Color(0xffca485c),
+                  // Color(0xffe16b5c),
+                  // Color(0xfff39060),
+                  // Color(0xffffb56b),
+                ], // Gradient from https://learnui.design/tools/gradient-generator.html
+                tileMode: TileMode.mirror,
               ),
-              child: Center(
-                child: Text(
-                  AppLocale.title.getString(context),
-                  style: TextStyle(fontSize: 24, color: Colors.white),
-                ),
+            ),
+            child: Center(
+              child: Text(
+                AppLocale.title.getString(context),
+                style: TextStyle(fontSize: 24, color: Colors.white),
               ),
-            ));
+            ),
+          ));
   }
 }
